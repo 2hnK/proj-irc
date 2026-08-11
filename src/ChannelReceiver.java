@@ -11,7 +11,7 @@ public class ChannelReceiver extends Thread {
     private final DataInputStream inputStream;
     private final DataOutputStream outputStream;
     private final ChannelManager channelManager;
-    private String currentChannel = "null";
+    private String currentChannel;
     private String nickname;
 
     // 생성자
