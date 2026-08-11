@@ -18,10 +18,8 @@ public class ChannelReceiver extends Thread {
     ChannelReceiver(Socket socket, ChannelManager channelManager) throws IOException {
         this.socket = socket;
         this.channelManager = channelManager;
-        nickname = "unknown";
-
-        inputStream = new DataInputStream(socket.getInputStream());
-        outputStream = new DataOutputStream(socket.getOutputStream());
+        this.inputStream = new DataInputStream(socket.getInputStream());
+        this.outputStream = new DataOutputStream(socket.getOutputStream());
 
         setupInitialConnection();
     }
@@ -116,7 +114,7 @@ public class ChannelReceiver extends Thread {
     // 채널 참여 명령어 처리
     private void processJoinChannel(String[] command) {
         try {
-            if (nickname.equals("unknown")) {
+            if (nickname == null) {
                 sendMessageToClient("Please set your nickname before joining a channel. (Command: NICK <nickname>)");
                 return;
             }
