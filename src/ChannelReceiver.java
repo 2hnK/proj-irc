@@ -7,25 +7,21 @@ import java.util.Date;
 import java.util.Set;
 
 public class ChannelReceiver extends Thread {
-    Socket socket;
-    DataInputStream inputStream;
-    DataOutputStream outputStream;
-    ChannelManager channelManager;
-    String currentChannel = "null";
-    String nickname;
+    private final Socket socket;
+    private final DataInputStream inputStream;
+    private final DataOutputStream outputStream;
+    private final ChannelManager channelManager;
+    private String currentChannel = "null";
+    private String nickname;
 
     // 생성자
-    ChannelReceiver(Socket socket, ChannelManager channelManager) {
+    ChannelReceiver(Socket socket, ChannelManager channelManager) throws IOException {
         this.socket = socket;
         this.channelManager = channelManager;
         nickname = "unknown";
 
-        try {
-            inputStream = new DataInputStream(socket.getInputStream());
-            outputStream = new DataOutputStream(socket.getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        inputStream = new DataInputStream(socket.getInputStream());
+        outputStream = new DataOutputStream(socket.getOutputStream());
 
         setupInitialConnection();
     }
@@ -64,7 +60,7 @@ public class ChannelReceiver extends Thread {
 
         try {
             String[] command = msg.split(" ", 2);
-            
+
             switch (command[0].toUpperCase()) {
                 case "JOIN":
                     processJoinChannel(command);
@@ -142,7 +138,7 @@ public class ChannelReceiver extends Thread {
             currentChannel = newChannel;
             channelManager.joinChannel(currentChannel, outputStream);
             sendMessageToClient("Joined channel: '" + currentChannel + "'");
-            
+
         } catch (Exception e) {
             sendMessageToClient("Error joining channel: " + e.getMessage());
         }
@@ -153,7 +149,7 @@ public class ChannelReceiver extends Thread {
         try {
             Set<String> channels = channelManager.getChannels();
             sendMessageToClient("<Channel List>");
-            
+
             if (!channels.isEmpty()) {
                 int i = 1;
                 for (String ch : channels) {
@@ -177,7 +173,7 @@ public class ChannelReceiver extends Thread {
             }
 
             String newNickname = command[1].trim();
-            
+
             if (!validateNickname(newNickname)) {
                 sendMessageToClient("Invalid nickname (alphanumeric, 2-12 characters)");
                 return;
@@ -300,9 +296,12 @@ public class ChannelReceiver extends Thread {
     // 연결 관련 리소스 정리
     private void cleanupResources() {
         try {
-            if (outputStream != null) outputStream.close();
-            if (inputStream != null) inputStream.close();
-            if (socket != null && !socket.isClosed()) socket.close();
+            if (outputStream != null)
+                outputStream.close();
+            if (inputStream != null)
+                inputStream.close();
+            if (socket != null && !socket.isClosed())
+                socket.close();
         } catch (IOException e) {
             System.err.println("Error while closing resources: " + e.getMessage());
         }
