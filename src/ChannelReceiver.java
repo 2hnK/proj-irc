@@ -165,21 +165,20 @@ public class ChannelReceiver extends Thread {
     // 사용자 닉네임 설정 처리
     private void updateNickname(String[] command) {
         try {
+            // 명령어 유효성 검사
             if (command.length != 2 || command[1].trim().isEmpty()) {
                 sendMessageToClient("Usage: NICK <nickname>");
                 return;
             }
 
+            // 닉네임 유효성 검사
             String newNickname = command[1].trim();
-
             if (!validateNickname(newNickname)) {
                 sendMessageToClient("Invalid nickname (alphanumeric, 2-12 characters)");
                 return;
             }
 
-            if (channelManager.isNicknameAvailable(newNickname)) {
-                channelManager.unregisterNickname(nickname);
-                channelManager.registerNickname(newNickname, outputStream);
+            if (channelManager.rename(nickname, newNickname, outputStream)) {
                 nickname = newNickname;
                 sendMessageToClient("Nickname set to '" + nickname + "'");
             } else {
@@ -214,7 +213,7 @@ public class ChannelReceiver extends Thread {
     // 개인 메시지 전송 처리
     private void sendPrivateMessage(String[] command) {
         try {
-            if (nickname.equals("unknown")) {
+            if (nickname == null) {
                 sendMessageToClient("Please set your nickname before sending private messages");
                 return;
             }

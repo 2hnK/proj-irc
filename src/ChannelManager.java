@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class ChannelManager {
-    private final Map<String, Set<DataOutputStream>> channels;  // channel name, outputStream
-    private final Map<String, DataOutputStream> users;  // nickname, outputStream
+    private final Map<String, Set<DataOutputStream>> channels; // channel name, outputStream
+    private final Map<String, DataOutputStream> users; // nickname, outputStream
 
     ChannelManager() {
         channels = Collections.synchronizedMap(new HashMap<>());
@@ -50,16 +50,21 @@ public class ChannelManager {
         });
     }
 
-    public synchronized void registerNickname(String nickname, DataOutputStream outputStream) {
-        users.put(nickname, outputStream);
+    public synchronized boolean rename(String oldNickname, String newNickname, DataOutputStream outputStream) {
+        if (!newNickname.equals(oldNickname) && users.containsKey(newNickname)) {
+            return false;
+        }
+
+        if (oldNickname != null) {
+            users.remove(oldNickname);
+        }
+
+        users.put(newNickname, outputStream);
+        return true;
     }
 
     public synchronized void unregisterNickname(String nickname) {
         users.remove(nickname);
-    }
-
-    public synchronized boolean isNicknameAvailable(String nickname) {
-        return !users.containsKey(nickname);
     }
 
     public synchronized void whisper(String from, String to, String content, ChannelReceiver receiver) {
@@ -80,5 +85,5 @@ public class ChannelManager {
             receiver.sendMessageToClient("Error: Failed to send message - " + e.getMessage());
         }
     }
-}
 
+}
