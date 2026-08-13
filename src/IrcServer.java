@@ -1,33 +1,72 @@
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.io.IOException;
 
 public class IrcServer {
 
-    private static final int SERVER_PORT = 9910;
+    private final int port;
+    private final ChannelManager channelManager;
+    private volatile boolean isRunning;
+    private volatile ServerSocket serverSocket;
+
+    public IrcServer(int port) {
+        this.port = port;
+        this.channelManager = new ChannelManager();
+    }
 
     public static void main(String[] args) {
-        ChannelManager channelManager = new ChannelManager();
+        IrcServer server = new IrcServer(9910);
 
-        try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT)) {
-            System.out.println("IRC Server started on port " + SERVER_PORT);
+        Runtime.getRuntime().addShutdownHook(new Thread(server::stop)); // JVM 종료 시 서버 종료 처리
 
-            while (true) {
+        server.start();
+    }
+
+    public void start() {
+        isRunning = true;
+
+        try {
+            serverSocket = new ServerSocket(port);
+
+            System.out.println("IRC Server started on port " + port);
+
+            while (isRunning) {
                 try {
                     Socket clientSocket = serverSocket.accept();
+
                     System.out.println("New client connected: " + clientSocket.getInetAddress());
 
-                    startClientThread(clientSocket, channelManager);
+                    startClientThread(clientSocket);
                 } catch (IOException e) {
-                    System.err.println("Error accepting client connection: " + e.getMessage());
+                    if (isRunning) {
+                        System.err.println("Error accepting client connection: " + e.getMessage());
+                    }
                 }
             }
         } catch (IOException e) {
             System.err.println("Server startup failed: " + e.getMessage());
+        } finally {
+            stop();
         }
     }
 
-    private static void startClientThread(Socket clientSocket, ChannelManager channelManager) {
+    public void stop() {
+        isRunning = false;
+
+        if (serverSocket == null || serverSocket.isClosed()) {
+            return;
+        }
+
+        try {
+            serverSocket.close();
+            System.out.println("IRC Server stopped.");
+        } catch (IOException e) {
+            System.err.println("Error closing server socket: " + e.getMessage());
+        }
+
+    }
+
+    private void startClientThread(Socket clientSocket) {
         try {
             ChannelReceiver receiver = new ChannelReceiver(clientSocket, channelManager);
             receiver.start();
@@ -37,7 +76,7 @@ public class IrcServer {
         }
     }
 
-    private static void closeClientSocket(Socket clientSocket) {
+    private void closeClientSocket(Socket clientSocket) {
         try {
             if (clientSocket != null && !clientSocket.isClosed()) {
                 clientSocket.close();
